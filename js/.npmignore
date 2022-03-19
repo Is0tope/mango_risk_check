@@ -1,0 +1,7 @@
+lib/
+test/
+examples/
+generateTables.py
+jest.config.d.test
+jest.config.js
+babel.config.js

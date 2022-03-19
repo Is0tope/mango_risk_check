@@ -1,0 +1,345 @@
+{
+  "version": "1.0.0",
+  "name": "mango_risk_check",
+  "instructions": [
+    {
+      "name": "initialize",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "marketIndex",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "setMaxOpenOrders",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mangoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoGroup",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxOpenOrders",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "setMaxLongExposure",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mangoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoGroup",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxLongExposure",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "setMaxShortExposure",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mangoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoGroup",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "maxShortExposure",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "setViolationBehaviour",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mangoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoGroup",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "violationBehaviour",
+          "type": {
+            "defined": "ViolationBehaviour"
+          }
+        }
+      ]
+    },
+    {
+      "name": "close",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "checkRisk",
+      "accounts": [
+        {
+          "name": "authority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "riskParamsAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "mangoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "mangoGroup",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarket",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarketBids",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "perpMarketAsks",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "RiskParamsAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          },
+          {
+            "name": "marketIndex",
+            "type": "u8"
+          },
+          {
+            "name": "maxLongExposure",
+            "type": "i64"
+          },
+          {
+            "name": "maxShortExposure",
+            "type": "i64"
+          },
+          {
+            "name": "maxOpenOrders",
+            "type": "u64"
+          },
+          {
+            "name": "maxCapitalAllocated",
+            "type": "u64"
+          },
+          {
+            "name": "violationBehaviour",
+            "type": {
+              "defined": "ViolationBehaviour"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "ViolationBehaviour",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "RejectTransaction"
+          },
+          {
+            "name": "CancelAllOrders"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NumOpenOrdersExceedsRequestedRiskLimit",
+      "msg": "Number of open orders exceeds requested limit"
+    },
+    {
+      "code": 6001,
+      "name": "NumOpenOrdersExceedsRiskLimit",
+      "msg": "Number of open orders exceeds risk limit"
+    },
+    {
+      "code": 6002,
+      "name": "LongExposureExceedsRequestedRiskLimit",
+      "msg": "Long exposure exceeds requested risk limit"
+    },
+    {
+      "code": 6003,
+      "name": "LongExposureExceedsRiskLimit",
+      "msg": "Long exposure exceeds risk limit"
+    },
+    {
+      "code": 6004,
+      "name": "ShortExposureExceedsRequestedRiskLimit",
+      "msg": "Short exposure exceeds requested risk limit"
+    },
+    {
+      "code": 6005,
+      "name": "ShortExposureExceedsRiskLimit",
+      "msg": "Short exposure exceeds risk limit"
+    },
+    {
+      "code": 6006,
+      "name": "ExposureLimitMustBePositive",
+      "msg": "Exposure limit must be positive"
+    }
+  ],
+  "metadata": {
+    "address": "94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7"
+  }
+}

@@ -1,0 +1,22 @@
+[package]
+name = "mango_risk_check"
+version = "1.0.0"
+description = "Solana program to risk check transactions on Mango Markets"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "mango_risk_check"
+
+[features]
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.22.1"
+solana-program = ">=1.9.0, <1.10.0"
+mango = { git = "https://github.com/blockworks-foundation/mango-v3.git", default-features = false, features = ["no-entrypoint"] }
+mango-common = { git = "https://github.com/blockworks-foundation/mango-v3.git" }
