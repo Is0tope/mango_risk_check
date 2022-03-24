@@ -205,7 +205,7 @@ test('Acquiring position and orders beyond long exposure is rejected', async() =
     tx2.add(makePerpOrderInstruction('buy',bestBid - 10,0.4))
     tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
-    await expect(client.sendTransaction(tx2, wallet, []))
+    return expect(client.sendTransaction(tx2, wallet, []))
         .rejects
         .toThrow('Transaction failed: AnchorError occurred. Error Code: LongExposureExceedsRiskLimit. Error Number: 6003. Error Message: Long exposure exceeds risk limit.')
 })
@@ -272,7 +272,7 @@ test('Acquiring position and orders beyond short exposure is rejected', async() 
     tx2.add(makePerpOrderInstruction('sell',bestAsk + 10,0.4))
     tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
-    await expect(client.sendTransaction(tx2, wallet, []))
+    return expect(client.sendTransaction(tx2, wallet, []))
         .rejects
         .toThrow('Transaction failed: AnchorError occurred. Error Code: ShortExposureExceedsRiskLimit. Error Number: 6005. Error Message: Short exposure exceeds risk limit.')
 })
@@ -289,7 +289,7 @@ test('Setting violation behaviour updates risk account', async () => {
 
     const tx = await riskChecker.setViolationBehaviour(perpConfig,ViolationBehaviour.CancelAllOrders)
     const riskAcc = await riskChecker.getRiskAccount(perpConfig)
-    expect(riskAcc.violationBehaviour).toStrictEqual(riskChecker.mapViolationBehaviour(ViolationBehaviour.CancelAllOrders))
+    return expect(riskAcc.violationBehaviour).toStrictEqual(riskChecker.mapViolationBehaviour(ViolationBehaviour.CancelAllOrders))
 })
 
 test('Violating short exposure with cancelAllOrders behaviour cancels all orders but does not reject', async () => {
@@ -303,6 +303,8 @@ test('Violating short exposure with cancelAllOrders behaviour cancels all orders
     tx.add(makeCancelAllInstruction())
     tx.add(makePerpOrderInstruction('sell',bestAsk + 10,0.1))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await client.sendTransaction(tx, wallet, [])
 
     let openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
     expect(openOrders.length).toBe(1)

@@ -108,6 +108,9 @@ pub mod mango_risk_check {
         );
         let has_orders = (long_order_quantity + short_order_quantity) > 0;
 
+        msg!("Current Risk: position: {}, unconsumed_position: {}, long_order_qty: {}, long_exposure: {}, short_order_qty: {}, short_exposure: {}",
+            position,unconsumed_position,long_order_quantity,long_exposure,short_order_quantity,short_exposure
+        );
         // Check open orders
         if num_open_orders > ctx.accounts.risk_params_account.max_open_orders {
             msg!("Open orders exceeded: num_open_orders: {}, risk_limit: {}",
