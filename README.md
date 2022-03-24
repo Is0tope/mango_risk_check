@@ -140,7 +140,7 @@ Check the current risk vs. the risk limits. This instruction should be added to 
 |       name      |isMut|isSigner|
 |-----------------|-----|--------|
 |    authority    |False|  True  |
-|riskParamsAccount| True|  False |
+|riskParamsAccount|False|  False |
 |   mangoProgram  |False|  False |
 |   mangoAccount  |False|  False |
 |    mangoGroup   |False|  False |
