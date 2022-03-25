@@ -6,6 +6,7 @@ use anchor_lang::prelude::*;
 use mango::state::MangoAccount;
 
 use errors::RiskCheckError;
+use static_assertions::const_assert;
 
 declare_id!("94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7");
 
@@ -16,7 +17,7 @@ pub mod mango_risk_check {
     use super::*;
 
     pub fn initialize(ctx: Context<Initialize>, market_index: u8) -> Result<()> {
-        let risk_params_account = &mut ctx.accounts.risk_params_account;
+        let mut risk_params_account = ctx.accounts.risk_params_account.load_init()?;
         risk_params_account.authority = ctx.accounts.authority.key();
         risk_params_account.bump = *ctx.bumps.get("risk_params_account").unwrap();
         // TODO: Verify this is a real symbol
@@ -32,17 +33,18 @@ pub mod mango_risk_check {
     }
 
     pub fn set_max_open_orders(ctx: Context<SetRiskParams>, max_open_orders: u64) -> Result<()> {
+        let mut risk_params_account = ctx.accounts.risk_params_account.load_mut()?;
         let risk_values = get_risk_values(
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index,
+            risk_params_account.market_index,
         );
         let num_open_orders = risk_values.num_open_orders;
         if num_open_orders > max_open_orders {
             return Err(RiskCheckError::NumOpenOrdersExceedsRequestedRiskLimit.into());
         }
-        ctx.accounts.risk_params_account.max_open_orders = max_open_orders;
+        risk_params_account.max_open_orders = max_open_orders;
         Ok(())
     }
 
@@ -50,6 +52,7 @@ pub mod mango_risk_check {
         ctx: Context<SetRiskParams>,
         max_long_exposure: i64,
     ) -> Result<()> {
+        let mut risk_params_account = ctx.accounts.risk_params_account.load_mut()?;
         if max_long_exposure < 0 {
             return Err(RiskCheckError::ExposureLimitMustBePositive.into());
         }
@@ -57,13 +60,13 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index,
+            risk_params_account.market_index,
         );
         let long_exposure = risk_values.long_exposure;
         if long_exposure > max_long_exposure {
             return Err(RiskCheckError::LongExposureExceedsRequestedRiskLimit.into());
         }
-        ctx.accounts.risk_params_account.max_long_exposure = max_long_exposure;
+        risk_params_account.max_long_exposure = max_long_exposure;
         Ok(())
     }
 
@@ -71,6 +74,7 @@ pub mod mango_risk_check {
         ctx: Context<SetRiskParams>,
         max_short_exposure: i64,
     ) -> Result<()> {
+        let mut risk_params_account = ctx.accounts.risk_params_account.load_mut()?;
         if max_short_exposure < 0 {
             return Err(RiskCheckError::ExposureLimitMustBePositive.into());
         }
@@ -78,13 +82,13 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index,
+            risk_params_account.market_index,
         );
         let short_exposure = risk_values.short_exposure;
         if short_exposure > max_short_exposure {
             return Err(RiskCheckError::ShortExposureExceedsRequestedRiskLimit.into());
         }
-        ctx.accounts.risk_params_account.max_short_exposure = max_short_exposure;
+        risk_params_account.max_short_exposure = max_short_exposure;
         Ok(())
     }
 
@@ -92,7 +96,8 @@ pub mod mango_risk_check {
         ctx: Context<SetRiskParams>,
         violation_behaviour: ViolationBehaviour,
     ) -> Result<()> {
-        ctx.accounts.risk_params_account.violation_behaviour = violation_behaviour;
+        let mut risk_params_account = ctx.accounts.risk_params_account.load_mut()?;
+        risk_params_account.violation_behaviour = violation_behaviour;
         Ok(())
     }
 
@@ -101,6 +106,8 @@ pub mod mango_risk_check {
     }
 
     pub fn check_risk(ctx: Context<CheckRisk>) -> Result<()> {
+        let risk_params_account = ctx.accounts.risk_params_account.load()?;
+
         let RiskValues {
             position,
             unconsumed_position,
@@ -113,7 +120,7 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index,
+            risk_params_account.market_index,
         );
         let has_orders = (long_order_quantity + short_order_quantity) > 0;
 
@@ -121,13 +128,13 @@ pub mod mango_risk_check {
             position,unconsumed_position,long_order_quantity,long_exposure,short_order_quantity,short_exposure
         );
         // Check open orders
-        if num_open_orders > ctx.accounts.risk_params_account.max_open_orders {
+        if num_open_orders > risk_params_account.max_open_orders {
             msg!(
                 "Open orders exceeded: num_open_orders: {}, risk_limit: {}",
                 num_open_orders,
-                ctx.accounts.risk_params_account.max_open_orders
+                risk_params_account.max_open_orders
             );
-            match ctx.accounts.risk_params_account.violation_behaviour {
+            match risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => {
                     return Err(RiskCheckError::NumOpenOrdersExceedsRiskLimit.into())
                 }
@@ -141,12 +148,12 @@ pub mod mango_risk_check {
         }
 
         // Check long exposure
-        let max_long_exposure = ctx.accounts.risk_params_account.max_long_exposure;
+        let max_long_exposure = risk_params_account.max_long_exposure;
         if long_exposure > max_long_exposure {
             msg!("Long exposure exceeded: position: {}, unconsumed_position: {}, long_order_qty: {}, long_exposure: {}, risk_limit: {}",
-                position,unconsumed_position,long_order_quantity,long_exposure,ctx.accounts.risk_params_account.max_long_exposure
+                position,unconsumed_position,long_order_quantity,long_exposure,risk_params_account.max_long_exposure
             );
-            match ctx.accounts.risk_params_account.violation_behaviour {
+            match risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => {
                     return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
                 }
@@ -163,12 +170,12 @@ pub mod mango_risk_check {
         }
 
         // Check short exposure
-        let max_short_exposure = ctx.accounts.risk_params_account.max_short_exposure;
+        let max_short_exposure = risk_params_account.max_short_exposure;
         if short_exposure > max_short_exposure {
             msg!("Short exposure exceeded: position: {}, unconsumed_position: {}, short_order_qty: {}, short_exposure: {}, risk_limit: {}",
-                position,unconsumed_position,short_order_quantity,short_exposure,ctx.accounts.risk_params_account.max_short_exposure
+                position,unconsumed_position,short_order_quantity,short_exposure,risk_params_account.max_short_exposure
             );
-            match ctx.accounts.risk_params_account.violation_behaviour {
+            match risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => {
                     return Err(RiskCheckError::ShortExposureExceedsRiskLimit.into())
                 }
@@ -289,20 +296,23 @@ impl Default for ViolationBehaviour {
     }
 }
 
-#[account]
+#[account(zero_copy)]
 #[derive(Default)]
 pub struct RiskParamsAccount {
-    pub authority: Pubkey, // 32
-    pub bump: u8,          // 1
-    pub market_index: u8,  // 1
+    pub authority: Pubkey, // 4
+
+    pub bump: u8,                                // 1
+    pub market_index: u8,                        // 1
+    pub violation_behaviour: ViolationBehaviour, // 1
+    pub reserved: [u8; 29],                      // 1
 
     pub max_long_exposure: i64,     // 8
     pub max_short_exposure: i64,    // 8
     pub max_open_orders: u64,       // 8
     pub max_capital_allocated: u64, // 8
-
-    pub violation_behaviour: ViolationBehaviour, // 1
 }
+const_assert!(std::mem::size_of::<RiskParamsAccount>() == 32 + 32 + 32);
+const_assert!(std::mem::size_of::<RiskParamsAccount>() % 32 == 0);
 
 #[derive(Accounts)]
 #[instruction(market_index: u8)]
@@ -315,7 +325,7 @@ pub struct Initialize<'info> {
         seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [market_index].as_ref(), authority.key().as_ref()],
         bump
     )]
-    pub risk_params_account: Account<'info, RiskParamsAccount>,
+    pub risk_params_account: AccountLoader<'info, RiskParamsAccount>,
     pub system_program: Program<'info, System>,
 }
 
@@ -327,7 +337,7 @@ pub struct Close<'info> {
         mut,
         close = authority
     )]
-    pub risk_params_account: Account<'info, RiskParamsAccount>,
+    pub risk_params_account: AccountLoader<'info, RiskParamsAccount>,
     pub system_program: Program<'info, System>,
 }
 
@@ -337,10 +347,10 @@ pub struct SetRiskParams<'info> {
     #[account(
         mut,
         has_one = authority,
-        seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [risk_params_account.market_index].as_ref(), authority.key().as_ref()],
-        bump = risk_params_account.bump
+        seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [risk_params_account.load()?.market_index].as_ref(), authority.key().as_ref()],
+        bump = risk_params_account.load()?.bump
     )]
-    pub risk_params_account: Account<'info, RiskParamsAccount>,
+    pub risk_params_account: AccountLoader<'info, RiskParamsAccount>,
     /// CHECK: read-only
     pub mango_program: AccountInfo<'info>,
     /// CHECK: read-only
@@ -354,10 +364,10 @@ pub struct CheckRisk<'info> {
     pub authority: Signer<'info>,
     #[account(
         has_one = authority,
-        seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [risk_params_account.market_index].as_ref(), authority.key().as_ref()],
-        bump = risk_params_account.bump
+        seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [risk_params_account.load()?.market_index].as_ref(), authority.key().as_ref()],
+        bump = risk_params_account.load()?.bump
     )]
-    pub risk_params_account: Account<'info, RiskParamsAccount>,
+    pub risk_params_account: AccountLoader<'info, RiskParamsAccount>,
     /// CHECK: read-only
     pub mango_program: AccountInfo<'info>,
     /// CHECK: read-only

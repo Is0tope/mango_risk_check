@@ -892,6 +892,7 @@ dependencies = [
  "mango",
  "mango-common",
  "solana-program",
+ "static_assertions",
 ]
 
 [[package]]
