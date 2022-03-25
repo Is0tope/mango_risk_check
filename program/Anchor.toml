@@ -2,10 +2,13 @@
 seeds = false
 
 [programs.localnet]
-mango_risk_check = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+mango_risk_check = "94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7"
 
 [programs.devnet]
-mango_risk_check = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+mango_risk_check = "94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7"
+
+[programs.mainnet]
+mango_risk_check = "94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7"
 
 [registry]
 url = "https://anchor.projectserum.com"

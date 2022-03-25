@@ -136,13 +136,10 @@ pub mod mango_risk_check {
             match ctx.accounts.risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::LongExposureExceedsRiskLimit.into()),
                 ViolationBehaviour::CancelAllOrders => {
-                    // Will cancelling orders get us below the risk limit?
-                    if (long_exposure - long_order_quantity) < max_long_exposure {
+                    if has_orders {
                         cancel_all(&ctx);
-                        return Ok(());
-                    } else {
-                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
                     }
+                    return Ok(());
                 }
             }
         }
@@ -156,13 +153,10 @@ pub mod mango_risk_check {
             match ctx.accounts.risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::ShortExposureExceedsRiskLimit.into()),
                 ViolationBehaviour::CancelAllOrders => {
-                    // Will cancelling orders get us below the risk limit?
-                    if (short_exposure - short_order_quantity) < max_short_exposure {
+                    if has_orders {
                         cancel_all(&ctx);
-                        return Ok(());
-                    } else {
-                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
                     }
+                    return Ok(());
                 }
             }
         }
@@ -284,6 +278,9 @@ pub struct Initialize<'info> {
         init,
         payer = authority,
         seeds = [RISK_PARAMS_ACCOUNT_SEED_PHRASE, [market_index].as_ref(), authority.key().as_ref()],
+        // Total space needed is 32 + 1 + 1 + 8 + 8 + 8 + 8 + 1 = 67
+        // Assign more for future usage
+        space = 192,
         bump
     )]
     pub risk_params_account: Account<'info, RiskParamsAccount>,
