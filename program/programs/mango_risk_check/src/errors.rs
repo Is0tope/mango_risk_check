@@ -15,5 +15,5 @@ pub enum RiskCheckError {
     #[msg("Short exposure exceeds risk limit")]
     ShortExposureExceedsRiskLimit,
     #[msg("Exposure limit must be positive")]
-    ExposureLimitMustBePositive
+    ExposureLimitMustBePositive,
 }

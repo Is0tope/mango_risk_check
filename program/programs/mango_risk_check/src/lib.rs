@@ -1,9 +1,9 @@
 mod errors;
 
-use std::{cmp};
+use std::cmp;
 
-use anchor_lang::{prelude::*};
-use mango::state::{MangoAccount};
+use anchor_lang::prelude::*;
+use mango::state::MangoAccount;
 
 use errors::RiskCheckError;
 
@@ -36,7 +36,7 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index
+            ctx.accounts.risk_params_account.market_index,
         );
         let num_open_orders = risk_values.num_open_orders;
         if num_open_orders > max_open_orders {
@@ -46,7 +46,10 @@ pub mod mango_risk_check {
         Ok(())
     }
 
-    pub fn set_max_long_exposure(ctx: Context<SetRiskParams>, max_long_exposure: i64) -> Result<()> {
+    pub fn set_max_long_exposure(
+        ctx: Context<SetRiskParams>,
+        max_long_exposure: i64,
+    ) -> Result<()> {
         if max_long_exposure < 0 {
             return Err(RiskCheckError::ExposureLimitMustBePositive.into());
         }
@@ -54,7 +57,7 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index
+            ctx.accounts.risk_params_account.market_index,
         );
         let long_exposure = risk_values.long_exposure;
         if long_exposure > max_long_exposure {
@@ -64,7 +67,10 @@ pub mod mango_risk_check {
         Ok(())
     }
 
-    pub fn set_max_short_exposure(ctx: Context<SetRiskParams>, max_short_exposure: i64) -> Result<()> {
+    pub fn set_max_short_exposure(
+        ctx: Context<SetRiskParams>,
+        max_short_exposure: i64,
+    ) -> Result<()> {
         if max_short_exposure < 0 {
             return Err(RiskCheckError::ExposureLimitMustBePositive.into());
         }
@@ -72,7 +78,7 @@ pub mod mango_risk_check {
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index
+            ctx.accounts.risk_params_account.market_index,
         );
         let short_exposure = risk_values.short_exposure;
         if short_exposure > max_short_exposure {
@@ -82,7 +88,10 @@ pub mod mango_risk_check {
         Ok(())
     }
 
-    pub fn set_violation_behaviour(ctx: Context<SetRiskParams>, violation_behaviour: ViolationBehaviour) -> Result<()> {
+    pub fn set_violation_behaviour(
+        ctx: Context<SetRiskParams>,
+        violation_behaviour: ViolationBehaviour,
+    ) -> Result<()> {
         ctx.accounts.risk_params_account.violation_behaviour = violation_behaviour;
         Ok(())
     }
@@ -92,19 +101,19 @@ pub mod mango_risk_check {
     }
 
     pub fn check_risk(ctx: Context<CheckRisk>) -> Result<()> {
-        let RiskValues { 
+        let RiskValues {
             position,
             unconsumed_position,
             num_open_orders,
             long_order_quantity,
             short_order_quantity,
             long_exposure,
-            short_exposure
+            short_exposure,
         } = get_risk_values(
             ctx.accounts.mango_program.key,
             ctx.accounts.mango_group.key,
             &ctx.accounts.mango_account,
-            ctx.accounts.risk_params_account.market_index
+            ctx.accounts.risk_params_account.market_index,
         );
         let has_orders = (long_order_quantity + short_order_quantity) > 0;
 
@@ -113,11 +122,15 @@ pub mod mango_risk_check {
         );
         // Check open orders
         if num_open_orders > ctx.accounts.risk_params_account.max_open_orders {
-            msg!("Open orders exceeded: num_open_orders: {}, risk_limit: {}",
-                num_open_orders,ctx.accounts.risk_params_account.max_open_orders
+            msg!(
+                "Open orders exceeded: num_open_orders: {}, risk_limit: {}",
+                num_open_orders,
+                ctx.accounts.risk_params_account.max_open_orders
             );
             match ctx.accounts.risk_params_account.violation_behaviour {
-                ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::NumOpenOrdersExceedsRiskLimit.into()),
+                ViolationBehaviour::RejectTransaction => {
+                    return Err(RiskCheckError::NumOpenOrdersExceedsRiskLimit.into())
+                }
                 ViolationBehaviour::CancelAllOrders => {
                     if has_orders {
                         cancel_all(&ctx);
@@ -134,14 +147,16 @@ pub mod mango_risk_check {
                 position,unconsumed_position,long_order_quantity,long_exposure,ctx.accounts.risk_params_account.max_long_exposure
             );
             match ctx.accounts.risk_params_account.violation_behaviour {
-                ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::LongExposureExceedsRiskLimit.into()),
+                ViolationBehaviour::RejectTransaction => {
+                    return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
+                }
                 ViolationBehaviour::CancelAllOrders => {
                     // Will cancelling orders get us below the risk limit?
                     if (long_exposure - long_order_quantity) < max_long_exposure {
                         cancel_all(&ctx);
                         return Ok(());
                     } else {
-                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
+                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into());
                     }
                 }
             }
@@ -154,14 +169,16 @@ pub mod mango_risk_check {
                 position,unconsumed_position,short_order_quantity,short_exposure,ctx.accounts.risk_params_account.max_short_exposure
             );
             match ctx.accounts.risk_params_account.violation_behaviour {
-                ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::ShortExposureExceedsRiskLimit.into()),
+                ViolationBehaviour::RejectTransaction => {
+                    return Err(RiskCheckError::ShortExposureExceedsRiskLimit.into())
+                }
                 ViolationBehaviour::CancelAllOrders => {
                     // Will cancelling orders get us below the risk limit?
                     if (short_exposure - short_order_quantity) < max_short_exposure {
                         cancel_all(&ctx);
                         return Ok(());
                     } else {
-                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into())
+                        return Err(RiskCheckError::LongExposureExceedsRiskLimit.into());
                     }
                 }
             }
@@ -178,20 +195,24 @@ pub struct RiskValues {
     short_order_quantity: i64,
     num_open_orders: u64,
     long_exposure: i64,
-    short_exposure: i64
+    short_exposure: i64,
 }
 
-pub fn get_risk_values(mango_program_id: &Pubkey, mango_group_id: &Pubkey, mango_acount_info: &AccountInfo, market_index: u8) -> RiskValues {
-    let mango_account = MangoAccount::load_checked(
-        mango_acount_info,
-        &mango_program_id,
-        &mango_group_id
-    ).unwrap();
+pub fn get_risk_values(
+    mango_program_id: &Pubkey,
+    mango_group_id: &Pubkey,
+    mango_acount_info: &AccountInfo,
+    market_index: u8,
+) -> RiskValues {
+    let mango_account =
+        MangoAccount::load_checked(mango_acount_info, &mango_program_id, &mango_group_id).unwrap();
 
     // TODO: Consume events to make sure we always have latest position?
 
     let perp_account = mango_account.perp_accounts[market_index as usize];
-    let num_open_orders: u64 = mango_account.order_market.into_iter()
+    let num_open_orders: u64 = mango_account
+        .order_market
+        .into_iter()
         .filter(|o| *o == market_index)
         .count()
         .try_into()
@@ -199,20 +220,26 @@ pub fn get_risk_values(mango_program_id: &Pubkey, mango_group_id: &Pubkey, mango
 
     let position: i64 = perp_account.base_position;
     let unconsumed_position: i64 = perp_account.taker_base; // Position that has not yet been consumed from event queue
-    let long_order_quantity: i64 = perp_account.bids_quantity;  // This should never be negative
+    let long_order_quantity: i64 = perp_account.bids_quantity; // This should never be negative
     let short_order_quantity: i64 = perp_account.asks_quantity; // This should never be negative
-    let long_exposure: i64 = cmp::max(0,position
-                                                .checked_add(unconsumed_position)
-                                                .unwrap()
-                                                .checked_add(long_order_quantity)
-                                                .unwrap());
-    let short_exposure: i64 = cmp::max(0,position
-                                                .checked_add(unconsumed_position)
-                                                .unwrap()
-                                                .checked_sub(short_order_quantity)
-                                                .unwrap()
-                                                .checked_mul(-1)
-                                                .unwrap());
+    let long_exposure: i64 = cmp::max(
+        0,
+        position
+            .checked_add(unconsumed_position)
+            .unwrap()
+            .checked_add(long_order_quantity)
+            .unwrap(),
+    );
+    let short_exposure: i64 = cmp::max(
+        0,
+        position
+            .checked_add(unconsumed_position)
+            .unwrap()
+            .checked_sub(short_order_quantity)
+            .unwrap()
+            .checked_mul(-1)
+            .unwrap(),
+    );
 
     return RiskValues {
         position,
@@ -221,8 +248,8 @@ pub fn get_risk_values(mango_program_id: &Pubkey, mango_group_id: &Pubkey, mango
         long_order_quantity,
         short_order_quantity,
         long_exposure,
-        short_exposure
-    }
+        short_exposure,
+    };
 }
 
 pub fn cancel_all(ctx: &Context<CheckRisk>) {
@@ -234,7 +261,9 @@ pub fn cancel_all(ctx: &Context<CheckRisk>) {
         ctx.accounts.perp_market.key,
         ctx.accounts.perp_market_bids.key,
         ctx.accounts.perp_market_asks.key,
-        20).unwrap();
+        20,
+    )
+    .unwrap();
     let account_infos = [
         ctx.accounts.mango_program.clone(),
         ctx.accounts.mango_group.clone(),
@@ -247,11 +276,11 @@ pub fn cancel_all(ctx: &Context<CheckRisk>) {
     solana_program::program::invoke(&ix, &account_infos).unwrap();
 }
 
-#[derive(AnchorSerialize,AnchorDeserialize,Clone,Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy)]
 #[repr(u8)]
 pub enum ViolationBehaviour {
     RejectTransaction = 0,
-    CancelAllOrders = 1
+    CancelAllOrders = 1,
 }
 
 impl Default for ViolationBehaviour {
@@ -264,15 +293,15 @@ impl Default for ViolationBehaviour {
 #[derive(Default)]
 pub struct RiskParamsAccount {
     pub authority: Pubkey, // 32
-    pub bump: u8, // 1
-    pub market_index: u8, // 1
+    pub bump: u8,          // 1
+    pub market_index: u8,  // 1
 
-    pub max_long_exposure: i64, // 8
-    pub max_short_exposure: i64, // 8
-    pub max_open_orders: u64, // 8
+    pub max_long_exposure: i64,     // 8
+    pub max_short_exposure: i64,    // 8
+    pub max_open_orders: u64,       // 8
     pub max_capital_allocated: u64, // 8
 
-    pub violation_behaviour: ViolationBehaviour // 1
+    pub violation_behaviour: ViolationBehaviour, // 1
 }
 
 #[derive(Accounts)]
@@ -317,7 +346,7 @@ pub struct SetRiskParams<'info> {
     /// CHECK: read-only
     pub mango_account: AccountInfo<'info>,
     /// CHECK: read-only
-    pub mango_group: AccountInfo<'info>
+    pub mango_group: AccountInfo<'info>,
 }
 
 #[derive(Accounts)]
@@ -340,5 +369,5 @@ pub struct CheckRisk<'info> {
     /// CHECK: read-only
     pub perp_market_bids: AccountInfo<'info>,
     /// CHECK: read-only
-    pub perp_market_asks: AccountInfo<'info>
+    pub perp_market_asks: AccountInfo<'info>,
 }
