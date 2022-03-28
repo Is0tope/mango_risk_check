@@ -14,7 +14,7 @@ mango_risk_check = "94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7"
 url = "https://anchor.projectserum.com"
 
 [provider]
-cluster = "devnet"
+cluster = "mainnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]

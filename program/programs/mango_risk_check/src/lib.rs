@@ -293,6 +293,7 @@ pub struct Close<'info> {
     pub authority: Signer<'info>,
     #[account(
         mut,
+        has_one = authority,
         close = authority
     )]
     pub risk_params_account: Account<'info, RiskParamsAccount>,

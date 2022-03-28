@@ -325,6 +325,7 @@ test('Closing risk account returns SOL and removes the account', async () => {
     const prevBalance = await connection.getBalance(wallet.publicKey)
     await riskChecker.closeRiskAccount(perpConfig)
     const newBalance = await connection.getBalance(wallet.publicKey)
+    await sleep(5_000)
     expect(newBalance).toBeGreaterThan(prevBalance)
     await expect(riskChecker.getRiskAccount(perpConfig))
         .rejects
