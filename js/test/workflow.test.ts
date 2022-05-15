@@ -16,7 +16,6 @@ function sleep(ms: number) {
 const endpoint = clusterApiUrl('devnet')
 const connection = new Connection(endpoint,'confirmed')
 const wallet = Keypair.generate()
-const deprecatedAccount = (wallet as unknown) as Account    // Hack required to work around deprecated Account on mango-client
 const config = new Config(configFile)
 const groupConfig = config.getGroupWithName('devnet.2') as GroupConfig
 const client = new MangoClient(connection, groupConfig.mangoProgramId)
@@ -42,10 +41,10 @@ beforeAll(async () => {
 
     // Create a Mango Account
     mangoGroup = await client.getMangoGroup(groupConfig.publicKey)
-    const mangoAccountAddress = await client.createMangoAccount(mangoGroup,deprecatedAccount,0)
+    const mangoAccountAddress = await client.createMangoAccount(mangoGroup,wallet,0)
     await sleep(2000)
     mangoAccount = await client.getMangoAccount(
-        mangoAccountAddress,
+        mangoAccountAddress!,
         mangoGroup.dexProgramId,
     )
 
@@ -56,7 +55,6 @@ beforeAll(async () => {
         mangoClient: client,
         mangoGroup: mangoGroup
     })
-
     // Drop some cash in the testing account
     const tokenAccounts = await getTokenAccountsByOwnerWithWrappedSol(connection,wallet.publicKey)
     await mangoGroup.loadRootBanks(connection)
@@ -64,7 +62,7 @@ beforeAll(async () => {
     const res = await client.deposit(
         mangoGroup,
         mangoAccount,
-        deprecatedAccount,
+        wallet,
         mangoGroup.tokens[tokenIndex].rootBank,
         mangoGroup.rootBankAccounts[tokenIndex]!.nodeBankAccounts[0].publicKey,
         mangoGroup.rootBankAccounts[tokenIndex]!.nodeBankAccounts[0].vault,
@@ -118,8 +116,8 @@ test('Placing open orders below maximum order limit is allowed', async () => {
     const bidPrice = bestBid - 10
     const askPrice = bestAsk + 10
 
-    await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,deprecatedAccount,'buy',bidPrice,0.1)
-    await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,deprecatedAccount,'sell',askPrice,0.1)
+    await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,wallet,'buy',bidPrice,0.1)
+    await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,wallet,'sell',askPrice,0.1)
 
     const openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
 

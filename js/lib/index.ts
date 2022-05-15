@@ -4,8 +4,6 @@ import * as anchor from "@project-serum/anchor";
 import { Program } from "@project-serum/anchor";
 import IDL from '../idl.json'
 import { findProgramAddressSync } from '@project-serum/anchor/dist/cjs/utils/pubkey'
-import { TypeDef } from '@project-serum/anchor/dist/cjs/program/namespace/types'
-import { IdlTypeDef } from '@project-serum/anchor/dist/cjs/idl'
 
 const RISK_PARAMS_ACCOUNT_SEED_PHRASE = 'risk-check'
 const DEFAULT_PROGRAM_ID = new PublicKey('94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7')
@@ -54,7 +52,7 @@ export class MangoRiskCheck {
         this._violationBehaviourEnumMap.set(ViolationBehaviour.CancelAllOrders,{ cancelAllOrders: {}})
 
         // TODO: What about the confirmation options? Probably should pass these in somehow
-        const provider = new anchor.Provider(this._connection,new anchor.Wallet(this._owner),{})
+        const provider = new anchor.AnchorProvider(this._connection,new anchor.Wallet(this._owner),{})
         this._program = new Program(IDL as anchor.Idl,this._programID,provider)
     }
 
@@ -103,7 +101,7 @@ export class MangoRiskCheck {
         const ix = this.makeInitializeInstruction(perpMarketConfig)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
     // TODO: How to get get right anchor typedefs?
@@ -133,7 +131,7 @@ export class MangoRiskCheck {
         const ix = this.makeSetMaxOpenOrdersInstruction(perpMarketConfig,maxOpenOrders)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
     makeSetMaxLongExposureInstruction(perpMarketConfig: PerpMarketConfig, perpMarket: PerpMarket, maxLongExposure: number | BN, nativeUnits = false): TransactionInstruction {
@@ -166,7 +164,7 @@ export class MangoRiskCheck {
         const ix = this.makeSetMaxLongExposureInstruction(perpMarketConfig,perpMarket,maxLongExposure,nativeUnits)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
     makeSetMaxShortExposureInstruction(perpMarketConfig: PerpMarketConfig, perpMarket: PerpMarket, maxShortExposure: number | BN, nativeUnits = false): TransactionInstruction {
@@ -199,7 +197,7 @@ export class MangoRiskCheck {
         const ix = this.makeSetMaxShortExposureInstruction(perpMarketConfig,perpMarket,maxShortExposure,nativeUnits)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
     makeSetViolationBehaviourInstruction(perpMarketConfig: PerpMarketConfig, violationBehaviour: ViolationBehaviour): TransactionInstruction {
@@ -220,7 +218,7 @@ export class MangoRiskCheck {
         const ix = this.makeSetViolationBehaviourInstruction(perpMarketConfig,violationBehaviour)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
     makeCheckRiskInstruction(perpMarketConfig: PerpMarketConfig, perpMarket: PerpMarket): TransactionInstruction {
@@ -254,7 +252,7 @@ export class MangoRiskCheck {
         const ix = this.makeCloseRiskAccountInstruction(perpMarketConfig)
         const tx = new Transaction()
         tx.add(ix)
-        return await this._program.provider.send(tx)
+        return await this._program.provider.sendAndConfirm!(tx)
     }
 
 }
