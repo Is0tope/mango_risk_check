@@ -113,8 +113,8 @@ test('Setting max open orders updates risk account', async () => {
 
 test('Placing open orders below maximum order limit is allowed', async () => {
     // Place orders deep in book
-    const bidPrice = bestBid - 10
-    const askPrice = bestAsk + 10
+    const bidPrice = bestBid - 1
+    const askPrice = bestAsk + 1
 
     await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,wallet,'buy',bidPrice,0.1)
     await client.placePerpOrder2(mangoGroup,mangoAccount,perpMarket,wallet,'sell',askPrice,0.1)
@@ -134,7 +134,7 @@ test('Setting max open orders below open orders is rejected', async () => {
 
 test('Placing another order in excess of max open orders rejects transaction', () => {
     const tx = new Transaction()
-    tx.add(makePerpOrderInstruction('buy',bestBid - 10,0.1))
+    tx.add(makePerpOrderInstruction('buy',bestBid - 1,0.1))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
     return expect(client.sendTransaction(tx, wallet, []))
         .rejects
@@ -160,8 +160,8 @@ test('Acquiring position and orders below long exposure is permitted', async () 
     // Acquire a position by using aggressive order and place passive order up to limit
     const tx = new Transaction()
     tx.add(makeCancelAllInstruction())
-    tx.add(makePerpOrderInstruction('buy',bestAsk + 10,0.7,'market'))
-    tx.add(makePerpOrderInstruction('buy',bestBid - 10,0.3))
+    tx.add(makePerpOrderInstruction('buy',bestAsk + 1,0.7,'market'))
+    tx.add(makePerpOrderInstruction('buy',bestBid - 1,0.3))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await client.sendTransaction(tx, wallet, [])
@@ -190,7 +190,7 @@ test('Acquiring position and orders beyond long exposure is rejected', async() =
     // Acquire a position by using aggressive order beyond the limit
     const tx = new Transaction()
     tx.add(makeCancelAllInstruction())
-    tx.add(makePerpOrderInstruction('buy',bestAsk + 10,0.4,'market'))
+    tx.add(makePerpOrderInstruction('buy',bestAsk + 1,0.4,'market'))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await expect(client.sendTransaction(tx, wallet, []))
@@ -200,7 +200,7 @@ test('Acquiring position and orders beyond long exposure is rejected', async() =
     // Place a long order beyond the limit
     const tx2 = new Transaction()
     tx2.add(makeCancelAllInstruction())
-    tx2.add(makePerpOrderInstruction('buy',bestBid - 10,0.4))
+    tx2.add(makePerpOrderInstruction('buy',bestBid - 1,0.4))
     tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     return expect(client.sendTransaction(tx2, wallet, []))
@@ -236,8 +236,8 @@ test('Acquiring position and orders below short exposure is permitted', async ()
     // Acquire a position by using aggressive order and place passive order up to limit
     const tx = new Transaction()
     tx.add(makeCancelAllInstruction())
-    tx.add(makePerpOrderInstruction('sell',bestBid - 10,1.4,'market')) // Need to sell past the original 0.7 long position
-    tx.add(makePerpOrderInstruction('sell',bestAsk + 10,0.3))
+    tx.add(makePerpOrderInstruction('sell',bestBid - 1,1.4,'market')) // Need to sell past the original 0.7 long position
+    tx.add(makePerpOrderInstruction('sell',bestAsk + 1,0.3))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await client.sendTransaction(tx, wallet, [])
@@ -257,7 +257,7 @@ test('Acquiring position and orders beyond short exposure is rejected', async() 
     // Acquire a position by using aggressive order beyond the limit
     const tx = new Transaction()
     tx.add(makeCancelAllInstruction())
-    tx.add(makePerpOrderInstruction('sell',bestBid - 10,0.4,'market'))
+    tx.add(makePerpOrderInstruction('sell',bestBid - 1,0.4,'market'))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await expect(client.sendTransaction(tx, wallet, []))
@@ -267,7 +267,7 @@ test('Acquiring position and orders beyond short exposure is rejected', async() 
     // Place a short order beyond the limit
     const tx2 = new Transaction()
     tx2.add(makeCancelAllInstruction())
-    tx2.add(makePerpOrderInstruction('sell',bestAsk + 10,0.4))
+    tx2.add(makePerpOrderInstruction('sell',bestAsk + 1,0.4))
     tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     return expect(client.sendTransaction(tx2, wallet, []))
@@ -299,7 +299,7 @@ test('Violating short exposure with cancelAllOrders behaviour cancels all orders
     // Place a passive sell order below risk limit
     const tx = new Transaction()
     tx.add(makeCancelAllInstruction())
-    tx.add(makePerpOrderInstruction('sell',bestAsk + 10,0.1))
+    tx.add(makePerpOrderInstruction('sell',bestAsk + 1,0.1))
     tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await client.sendTransaction(tx, wallet, [])
@@ -309,7 +309,7 @@ test('Violating short exposure with cancelAllOrders behaviour cancels all orders
 
     // Place a short order beyond the limit
     const tx2 = new Transaction()
-    tx2.add(makePerpOrderInstruction('sell',bestAsk + 10,0.4))
+    tx2.add(makePerpOrderInstruction('sell',bestAsk + 1,0.4))
     tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
 
     await expect(client.sendTransaction(tx2, wallet, []))
