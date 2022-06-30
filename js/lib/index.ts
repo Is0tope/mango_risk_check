@@ -10,7 +10,8 @@ const DEFAULT_PROGRAM_ID = new PublicKey('94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyN
 
 export enum ViolationBehaviour {
     RejectTransaction = 0,
-    CancelAllOrders = 1
+    CancelAllOrders = 1,
+    CancelIncreasingOrders = 2
 }
 
 interface NewMangoRiskCheckArgs {
@@ -50,6 +51,7 @@ export class MangoRiskCheck {
         // TODO: This is a hack, as unsure how to use enums with Anchor's IDL
         this._violationBehaviourEnumMap.set(ViolationBehaviour.RejectTransaction,{ rejectTransaction: {}})
         this._violationBehaviourEnumMap.set(ViolationBehaviour.CancelAllOrders,{ cancelAllOrders: {}})
+        this._violationBehaviourEnumMap.set(ViolationBehaviour.CancelIncreasingOrders,{ cancelIncreasingOrders: {}})
 
         // TODO: What about the confirmation options? Probably should pass these in somehow
         const provider = new anchor.AnchorProvider(this._connection,new anchor.Wallet(this._owner),{})

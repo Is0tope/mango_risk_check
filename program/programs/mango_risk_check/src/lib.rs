@@ -3,7 +3,7 @@ mod errors;
 use std::{cmp};
 
 use anchor_lang::{prelude::*};
-use mango::state::{MangoAccount};
+use mango::{state::{MangoAccount}, matching::Side};
 
 use errors::RiskCheckError;
 
@@ -118,7 +118,7 @@ pub mod mango_risk_check {
             );
             match ctx.accounts.risk_params_account.violation_behaviour {
                 ViolationBehaviour::RejectTransaction => return Err(RiskCheckError::NumOpenOrdersExceedsRiskLimit.into()),
-                ViolationBehaviour::CancelAllOrders => {
+                ViolationBehaviour::CancelAllOrders | ViolationBehaviour::CancelIncreasingOrders => {
                     if has_orders {
                         cancel_all(&ctx);
                     }
@@ -140,6 +140,12 @@ pub mod mango_risk_check {
                         cancel_all(&ctx);
                     }
                     return Ok(());
+                },
+                ViolationBehaviour::CancelIncreasingOrders => {
+                    if has_orders {
+                        cancel_all_side(&ctx,Side::Bid);
+                    }
+                    // Don't return here, as we could in theory be exposed on both sides
                 }
             }
         }
@@ -157,6 +163,11 @@ pub mod mango_risk_check {
                         cancel_all(&ctx);
                     }
                     return Ok(());
+                },
+                ViolationBehaviour::CancelIncreasingOrders => {
+                    if has_orders {
+                        cancel_all_side(&ctx,Side::Ask);
+                    }
                 }
             }
         }
@@ -181,8 +192,6 @@ pub fn get_risk_values(mango_program_id: &Pubkey, mango_group_id: &Pubkey, mango
         &mango_program_id,
         &mango_group_id
     ).unwrap();
-
-    // TODO: Consume events to make sure we always have latest position?
 
     let perp_account = mango_account.perp_accounts[market_index as usize];
     let num_open_orders: u64 = mango_account.order_market.into_iter()
@@ -241,11 +250,35 @@ pub fn cancel_all(ctx: &Context<CheckRisk>) {
     solana_program::program::invoke(&ix, &account_infos).unwrap();
 }
 
+pub fn cancel_all_side(ctx: &Context<CheckRisk>, side: Side) {
+    let ix = mango::instruction::cancel_perp_orders_side(
+        ctx.accounts.mango_program.key,
+        ctx.accounts.mango_group.key,
+        ctx.accounts.mango_account.key,
+        ctx.accounts.authority.key,
+        ctx.accounts.perp_market.key,
+        ctx.accounts.perp_market_bids.key,
+        ctx.accounts.perp_market_asks.key,
+        side,
+        20).unwrap();
+    let account_infos = [
+        ctx.accounts.mango_program.clone(),
+        ctx.accounts.mango_group.clone(),
+        ctx.accounts.mango_account.clone(),
+        ctx.accounts.authority.to_account_info(),
+        ctx.accounts.perp_market.clone(),
+        ctx.accounts.perp_market_bids.clone(),
+        ctx.accounts.perp_market_asks.clone(),
+    ];
+    solana_program::program::invoke(&ix, &account_infos).unwrap();
+}
+
 #[derive(AnchorSerialize,AnchorDeserialize,Clone,Copy)]
 #[repr(u8)]
 pub enum ViolationBehaviour {
     RejectTransaction = 0,
-    CancelAllOrders = 1
+    CancelAllOrders = 1,
+    CancelIncreasingOrders = 2
 }
 
 impl Default for ViolationBehaviour {

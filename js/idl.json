@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.2.0",
   "name": "mango_risk_check",
   "instructions": [
     {
@@ -205,7 +205,7 @@
         },
         {
           "name": "riskParamsAccount",
-          "isMut": true,
+          "isMut": false,
           "isSigner": false
         },
         {
@@ -297,6 +297,9 @@
           },
           {
             "name": "CancelAllOrders"
+          },
+          {
+            "name": "CancelIncreasingOrders"
           }
         ]
       }

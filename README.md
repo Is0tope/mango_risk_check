@@ -108,7 +108,8 @@ Set the behaviour of the program when a risk check is violated. The following op
 | Name | Representation (u8) | Description |
 | --- | --- | --- |
 | RejectTransaction | 0 | Reject the entire transaction outright |
-| CancelAllOrders | 1 | Cancel all orders if this will drop the exposure below the risk limit, otherwise reject |
+| CancelAllOrders | 1 | Cancel all orders |
+| CancelIncreasingOrders | 2 | Cancel all orders on the side that is increasing |
 
 #### Accounts
 |       name      |isMut|isSigner|

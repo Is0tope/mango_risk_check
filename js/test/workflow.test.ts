@@ -319,6 +319,107 @@ test('Violating short exposure with cancelAllOrders behaviour cancels all orders
     expect(openOrders.length).toBe(0)
 })
 
+test('Violating short exposure with cancelIncreasingOrders behaviour cancels all sell orders but does not reject', async () => {
+    // NOTE: Already have a position of -0.7 here!
+
+    await riskChecker.setMaxOpenOrders(perpConfig,4)
+    await riskChecker.setViolationBehaviour(perpConfig,ViolationBehaviour.CancelIncreasingOrders)
+    await riskChecker.setMaxShortExposure(perpConfig,perpMarket,1)
+
+    // Place a passive buy and sell orders below risk limit
+    const tx = new Transaction()
+    tx.add(makeCancelAllInstruction())
+    tx.add(makePerpOrderInstruction('sell',bestAsk + 1,0.1))
+    tx.add(makePerpOrderInstruction('buy',bestBid - 1,0.1))
+    tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await client.sendTransaction(tx, wallet, [])
+
+    let openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(2)
+
+    // Place a short order beyond the limit
+    const tx2 = new Transaction()
+    tx2.add(makePerpOrderInstruction('sell',bestAsk + 1,0.4))
+    tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await expect(client.sendTransaction(tx2, wallet, []))
+
+    await sleep(5_000)
+    // Only the buy order (decreasing) should be left
+    openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(1)
+    expect(openOrders[0].side).toBe('buy')
+})
+
+test('Violating long exposure with cancelIncreasingOrders behaviour cancels all buy orders but does not reject', async () => {
+    // NOTE: Already have a position of -0.7 here!
+
+    await riskChecker.setMaxOpenOrders(perpConfig,4)
+    await riskChecker.setViolationBehaviour(perpConfig,ViolationBehaviour.CancelIncreasingOrders)
+    await riskChecker.setMaxLongExposure(perpConfig,perpMarket,1)
+
+    // Place a passive buy and sell orders below risk limit
+    const tx = new Transaction()
+    tx.add(makeCancelAllInstruction())
+    tx.add(makePerpOrderInstruction('sell',bestAsk + 1,0.1))
+    tx.add(makePerpOrderInstruction('buy',bestBid - 1,1.4))
+    tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await client.sendTransaction(tx, wallet, [])
+
+    let openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(2)
+
+    // Place a long order beyond the limit
+    const tx2 = new Transaction()
+    tx2.add(makePerpOrderInstruction('buy',bestBid - 1,0.4))
+    tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await expect(client.sendTransaction(tx2, wallet, []))
+
+    await sleep(5_000)
+    // Only the sell order (decreasing) should be left
+    openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(1)
+    expect(openOrders[0].side).toBe('sell')
+})
+
+
+test('Violating long AND short exposure with cancelIncreasingOrders behaviour cancels all buy and sell orders but does not reject', async () => {
+    // NOTE: Already have a position of -0.7 here!
+
+    await riskChecker.setMaxOpenOrders(perpConfig,4)
+    await riskChecker.setViolationBehaviour(perpConfig,ViolationBehaviour.CancelIncreasingOrders)
+    await riskChecker.setMaxShortExposure(perpConfig,perpMarket,1)
+    await riskChecker.setMaxLongExposure(perpConfig,perpMarket,1)
+
+    // Place a passive buy and sell orders below risk limit
+    const tx = new Transaction()
+    tx.add(makeCancelAllInstruction())
+    tx.add(makePerpOrderInstruction('sell',bestAsk + 1,0.1))
+    tx.add(makePerpOrderInstruction('buy',bestBid - 1,1.4))
+    tx.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await client.sendTransaction(tx, wallet, [])
+
+    let openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(2)
+
+    // Place a long order beyond the limit
+    const tx2 = new Transaction()
+    tx2.add(makePerpOrderInstruction('buy',bestBid - 1,0.4))
+    tx2.add(makePerpOrderInstruction('sell',bestAsk + 1,0.4))
+    tx2.add(riskChecker.makeCheckRiskInstruction(perpConfig,perpMarket))
+
+    await expect(client.sendTransaction(tx2, wallet, []))
+
+    await sleep(5_000)
+    // Both buy and sell orders should be canceled
+    openOrders = await perpMarket.loadOrdersForAccount(connection,mangoAccount)
+    expect(openOrders.length).toBe(0)
+})
+
 test('Closing risk account returns SOL and removes the account', async () => {
     const prevBalance = await connection.getBalance(wallet.publicKey)
     await riskChecker.closeRiskAccount(perpConfig)

@@ -1,6 +1,6 @@
 [package]
 name = "mango_risk_check"
-version = "1.0.0"
+version = "1.2.0"
 description = "Solana program to risk check transactions on Mango Markets"
 edition = "2021"
 
