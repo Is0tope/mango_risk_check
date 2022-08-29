@@ -1,5 +1,8 @@
 # Mango Risk Check
-This library provides an easy to use interface for the `mango_risk_check` Solana program. Read the [README](../README.md) for more information about the program itself.
+This library provides an easy-to-use interface for the `mango_risk_check` Solana program. Read the [Program README](https://github.com/Is0tope/mango_risk_check) for more information about the program itself.
+
+## Disclaimer
+Use of this program and/or code is **at your own risk**. 
 
 ## Instalation
 Install via npm or yarn:

@@ -1,8 +1,11 @@
 # mango_risk_check
-Solana program to risk check transactions on Mango Markets.
+Solana program to risk check transactions on Mango Markets. 
 
 ## Purpose
-Solana transactions are atomic, meaning that if any one of the instructions in a transaction fails, the whole transaction is rolled back. When sending multiple cancel, new order, etc transactions to the exchange, it is desirable to make sure that eg. you never acquire a larger position that you want (limit risk). This program allows you to set risk parameters such as the maximum position, and then add an additional instruction that checks whether the transaction would breach the risk limits. If it does, then the program will reject the transaction, or act so as to limit the risk.
+Solana transactions are atomic, meaning that if any one of the instructions in a transaction fails, the whole transaction is rolled back. When sending multiple cancel, new order, etc transactions to the exchange, it is desirable to make sure that e,g. you never acquire a larger position that you want (limit risk). This program allows you to set risk parameters such as the maximum position, and then add an additional instruction that checks whether the transaction would breach the risk limits. If it does, then the program will reject the transaction, or act so as to limit the risk.
+
+## Disclaimer
+Use of this program and/or code is **at your own risk**. 
 
 ## Supported Risk Limits
 | Risk Limit | Default | Description |
@@ -13,8 +16,13 @@ Solana transactions are atomic, meaning that if any one of the instructions in a
 
 *More limits are planned.
 
+## Violation Behaviour
+It is possible to select different [violation behaviours](#setviolationbehaviour) when a risk limit is breached. It is important to note that while the `RejectTransaction` behaviour should reject the transaction if it increases the risk beyond the limit, the program is incapable of knowing if orders executed were reducing, and therefore will reject regardless. This can lead to a situation where reducing orders will be rejected if they do not reduce the position to below the limit. This is a limitation of the "post-fact" checking that this program does, since knowing position reductions would need knowledge of what the position was before, and this is not currently done.
+
+Using the `CancelOrders` and `CancelIncreasingOrders` behaviours **will not reject increases in position** since it is incapable of knowing what the position was before. Use `RejectTransaction` to prevent position increases.
+
 ## Deployment
-The program is currently only deployed on `devnet`. The programID is `94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7`.
+The program is currently deployed on `devnet` and `mainnet-beta`. The programID is `94oHQMrCECP266YUoQmDvgVwafZApP9KAseMyNtjAPP7`.
 ## How To Use
 The first step is to initialise the risk_params_account PDA, which contains all of the risk limits **per instrument**. Currently, risk checks are limited in scope to each symbol individually. The address of the risk_params_account is a PDA derived from the following seeds:
 
@@ -22,7 +30,7 @@ The first step is to initialise the risk_params_account PDA, which contains all 
 seeds = ["risk-check", marketIndex as u8, Owner PublicKey]
 ```
 
-The [initialize](#initialize) instruction can then be used to initialize the account. Individual risk limits can then be set using the [setter instructions](#available-instructions). In addition, the behaviour of the program when a risk limit is violated can be set using the [setViolationBehaviour](#setviolationbehaviour) instruction. Currently, this is either a full rejection of the transaction or the cancellation of any open orders on that symbol if it will reduce the risk. Attempting to set a risk limit that is currently breached is not currently permitted.
+The [initialize](#initialize) instruction can then be used to initialise the account. Individual risk limits can then be set using the [setter instructions](#available-instructions). In addition, the behaviour of the program when a risk limit is violated can be set using the [setViolationBehaviour](#setviolationbehaviour) instruction. Currently, this is either a full rejection of the transaction or the cancellation of any open orders on that symbol if it will reduce the risk. Attempting to set a risk limit that is currently breached is not currently permitted.
 
 In order for the risk checker to work, the [checkRisk](#checkrisk) instruction must be placed as the **last instruction in the transaction**. This is important, as the risk check needs to see the outcome of all of the initial instructions first, in order to assess if they were permitted. If the checkRisk instruction fails, it means that all of the prior instructions get rolled back. For instance, the following would be an example set up (pseudo javascript):
 
